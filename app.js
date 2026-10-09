@@ -79,11 +79,13 @@ function renderGames(games) {
 
   tbody.innerHTML = games.map((game) => {
     const safeLink = game.link || '#';
+    const whiteStyle = game.winner === 'White' ? 'border: 2px solid #22c55e;' : '';
+    const blackStyle = game.winner === 'Black' ? 'border: 2px solid #22c55e;' : '';
+
     return `
       <tr>
-        <td>${game.white || 'Unknown'}</td>
-        <td>${game.black || 'Unknown'}</td>
-        <td>${game.winner || 'Unknown'}</td>
+        <td><span style="${whiteStyle} padding: 6px 8px; border-radius: 6px; display: inline-block;">${game.white || 'Unknown'}</span></td>
+        <td><span style="${blackStyle} padding: 6px 8px; border-radius: 6px; display: inline-block;">${game.black || 'Unknown'}</span></td>
         <td><a href="${safeLink}" target="_blank" rel="noopener noreferrer">View Game</a></td>
       </tr>
     `;
@@ -126,7 +128,7 @@ async function loadGames() {
     allGames = Array.isArray(data.games) ? data.games : [];
     renderGames(allGames);
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
   }
 }
 
