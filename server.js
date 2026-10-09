@@ -32,7 +32,7 @@ db.serialize(() => {
 });
 
 // ELO calculation function
-function calculateELO(winnerELO, loserELO, K = 32) {
+function calculateELO(winnerELO, loserELO, K = 24) {
   const expectedWinner = 1 / (1 + Math.pow(10, (loserELO - winnerELO) / 400));
   const expectedLoser = 1 / (1 + Math.pow(10, (winnerELO - loserELO) / 400));
   
