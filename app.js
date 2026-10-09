@@ -1,5 +1,10 @@
 let allPlayers = [];
 
+function truncateToHundredth(value) {
+  const num = Number(value) || 0;
+  return Math.floor(num * 100) / 100;
+}
+
 function calculateRank(elo) {
   const eloNum = Number(elo) || 0;
 
@@ -15,26 +20,19 @@ function calculateRank(elo) {
   return `${danIndex} Dan`;
 }
 
-function truncateToHundredth(value) {
-  const num = Number(value) || 0;
-  return Math.floor(num * 100) / 100;
-}
-
 function calculateELO(winnerElo, loserElo, kFactor = 32) {
-  const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
-  const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
-  
-  // Normal ELO calculation
+  const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 190));
+  const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 190));
+
   const normalWinnerGain = kFactor * (1 - expectedWinner);
   const normalLoserLoss = kFactor * (0 - expectedLoser);
-  
-  // Divide by 2 and add 0.005 bonus
-  const winnerChange = (normalWinnerGain / 2) + 0.005;
-  const loserChange = (normalLoserLoss / 2) + 0.005;
-  
+
+  const winnerChange = normalWinnerGain + 0.005;
+  const loserChange = normalLoserLoss + 0.005;
+
   const newWinnerElo = truncateToHundredth(Number(winnerElo) + winnerChange);
   const newLoserElo = truncateToHundredth(Number(loserElo) + loserChange);
-  
+
   return { newWinnerElo, newLoserElo };
 }
 
