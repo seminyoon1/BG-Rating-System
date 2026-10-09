@@ -101,6 +101,25 @@ function filterLeaderboard() {
   renderLeaderboard(filtered);
 }
 
+function downloadJSON() {
+  fetch('data.json?t=' + Date.now(), { cache: 'no-store' })
+    .then((response) => response.json())
+    .then((data) => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'players.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    })
+    .catch((error) => {
+      alert('Unable to download JSON: ' + error.message);
+    });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   loadLeaderboard();
 });
