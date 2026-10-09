@@ -1,0 +1,16 @@
+{
+  "games": [
+    {
+      "white": "Player1",
+      "black": "Player2",
+      "winner": "White",
+      "link": "https://example.com/game/1"
+    },
+    {
+      "white": "Player3",
+      "black": "Player4",
+      "winner": "Black",
+      "link": "https://example.com/game/2"
+    }
+  ]
+}
