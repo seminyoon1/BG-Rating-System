@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BG Rating System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>BG Rating System</h1>
+
+    <div class="card">
+      <h2>Add Account</h2>
+      <div class="row">
+        <input id="usernameInput" type="text" placeholder="Enter username" maxlength="40" />
+        <button class="primary" onclick="addPlayer()">Add Player</button>
+      </div>
+      <div id="addPlayerMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Record Match</h2>
+      <div class="row split">
+        <input id="winnerInput" type="text" placeholder="Winner username" />
+        <input id="loserInput" type="text" placeholder="Loser username" />
+      </div>
+      <button class="success" onclick="recordMatch()">Record Result</button>
+      <div id="matchMessage" class="message"></div>
+    </div>
+
+    <div class="card stats">
+      <div class="stat-box">
+        <div class="stat-number" id="totalPlayers">0</div>
+        <div class="stat-label">Players</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="totalMatches">0</div>
+        <div class="stat-label">Matches</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Leaderboard</h2>
+      <input id="searchInput" type="text" placeholder="Search username..." oninput="filterLeaderboard()" />
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Username</th>
+              <th>ELO</th>
+              <th>Wins</th>
+              <th>Losses</th>
+              <th>W/L</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Data</h2>
+      <div class="row actions">
+        <button class="ghost" onclick="exportData()">Export</button>
+        <button class="ghost" onclick="importData()">Import</button>
+        <button class="danger" onclick="clearAllData()">Clear all</button>
+      </div>
+      <input id="importFile" type="file" accept="application/json" hidden />
+    </div>
+  </div>
+
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
