@@ -15,6 +15,24 @@ function calculateRank(elo) {
   return `${danIndex} Dan`;
 }
 
+function calculateELO(winnerElo, loserElo, kFactor = 32) {
+  const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
+  const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
+  
+  // Normal ELO calculation
+  const normalWinnerGain = kFactor * (1 - expectedWinner);
+  const normalLoserLoss = kFactor * (0 - expectedLoser);
+  
+  // Divide by 2 and add 0.005 bonus
+  const winnerChange = (normalWinnerGain / 2) + 0.005;
+  const loserChange = (normalLoserLoss / 2) + 0.005;
+  
+  const newWinnerElo = Math.round((Number(winnerElo) + winnerChange) * 1000) / 1000;
+  const newLoserElo = Math.round((Number(loserElo) + loserChange) * 1000) / 1000;
+  
+  return { newWinnerElo, newLoserElo };
+}
+
 function getWlRatio(player) {
   if (player.losses === 0) {
     return player.wins > 0 ? Number(player.wins).toFixed(1) : '—';
