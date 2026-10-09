@@ -10,23 +10,49 @@
   <div class="container">
     <h1>BG Rating System</h1>
 
-    <div class="card">
-      <h2>Player List</h2>
-      <input id="searchInput" type="text" placeholder="Search username..." oninput="filterLeaderboard()" />
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Username</th>
-              <th>ELO</th>
-              <th>Wins</th>
-              <th>Losses</th>
-              <th>W/L</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboardBody"></tbody>
-        </table>
+    <div class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-tab="players" type="button">Player List</button>
+      <button class="tab" data-tab="games" type="button">Games</button>
+    </div>
+
+    <div id="playersView" class="tab-panel active">
+      <div class="card">
+        <h2>Player List</h2>
+        <input id="searchInput" type="text" placeholder="Search username..." oninput="filterLeaderboard()" />
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Username</th>
+                <th>ELO</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>W/L</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="gamesView" class="tab-panel">
+      <div class="card">
+        <h2>Games</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>White</th>
+                <th>Black</th>
+                <th>Winner</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody id="gamesBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
