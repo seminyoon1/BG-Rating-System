@@ -15,6 +15,11 @@ function calculateRank(elo) {
   return `${danIndex} Dan`;
 }
 
+function truncateToHundredth(value) {
+  const num = Number(value) || 0;
+  return Math.floor(num * 100) / 100;
+}
+
 function calculateELO(winnerElo, loserElo, kFactor = 32) {
   const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
   const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
@@ -27,8 +32,8 @@ function calculateELO(winnerElo, loserElo, kFactor = 32) {
   const winnerChange = (normalWinnerGain / 2) + 0.005;
   const loserChange = (normalLoserLoss / 2) + 0.005;
   
-  const newWinnerElo = Math.round((Number(winnerElo) + winnerChange) * 1000) / 1000;
-  const newLoserElo = Math.round((Number(loserElo) + loserChange) * 1000) / 1000;
+  const newWinnerElo = truncateToHundredth(Number(winnerElo) + winnerChange);
+  const newLoserElo = truncateToHundredth(Number(loserElo) + loserChange);
   
   return { newWinnerElo, newLoserElo };
 }
@@ -50,12 +55,13 @@ function renderLeaderboard(players) {
 
   tbody.innerHTML = players.map((player) => {
     const rankLabel = calculateRank(player.elo_rating);
+    const truncatedElo = truncateToHundredth(player.elo_rating);
 
     return `
       <tr>
         <td>${rankLabel}</td>
         <td>${player.username}</td>
-        <td><strong>${player.elo_rating}</strong></td>
+        <td><strong>${truncatedElo}</strong></td>
         <td>${player.wins || 0}</td>
         <td>${player.losses || 0}</td>
         <td>${getWlRatio(player)}</td>
