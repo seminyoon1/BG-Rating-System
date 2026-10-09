@@ -1,4 +1,5 @@
 let allPlayers = [];
+let allGames = [];
 
 function truncateToHundredth(value) {
   const num = Number(value) || 0;
@@ -68,6 +69,27 @@ function renderLeaderboard(players) {
   }).join('');
 }
 
+function renderGames(games) {
+  const tbody = document.getElementById('gamesBody');
+
+  if (!games.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No games yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = games.map((game) => {
+    const safeLink = game.link || '#';
+    return `
+      <tr>
+        <td>${game.white || 'Unknown'}</td>
+        <td>${game.black || 'Unknown'}</td>
+        <td>${game.winner || 'Unknown'}</td>
+        <td><a href="${safeLink}" target="_blank" rel="noopener noreferrer">View Game</a></td>
+      </tr>
+    `;
+  }).join('');
+}
+
 async function loadLeaderboard() {
   const tbody = document.getElementById('leaderboardBody');
 
@@ -93,6 +115,21 @@ async function loadLeaderboard() {
   }
 }
 
+async function loadGames() {
+  const tbody = document.getElementById('gamesBody');
+
+  try {
+    const response = await fetch('games.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!response.ok) throw new Error('Could not load games.json');
+
+    const data = await response.json();
+    allGames = Array.isArray(data.games) ? data.games : [];
+    renderGames(allGames);
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+  }
+}
+
 function filterLeaderboard() {
   const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
   const filtered = searchValue
@@ -101,25 +138,27 @@ function filterLeaderboard() {
   renderLeaderboard(filtered);
 }
 
-function downloadJSON() {
-  fetch('data.json?t=' + Date.now(), { cache: 'no-store' })
-    .then((response) => response.json())
-    .then((data) => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'players.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    })
-    .catch((error) => {
-      alert('Unable to download JSON: ' + error.message);
-    });
+function setActiveTab(tabName) {
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach((tab) => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+
+  panels.forEach((panel) => {
+    panel.classList.toggle('active', panel.id === `${tabName}View`);
+  });
+}
+
+function bindTabs() {
+  document.querySelectorAll('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
+  });
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  bindTabs();
   loadLeaderboard();
+  loadGames();
 });
