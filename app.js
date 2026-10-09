@@ -1,5 +1,20 @@
 let allPlayers = [];
 
+function calculateRank(elo) {
+  const eloNum = Number(elo) || 0;
+
+  if (eloNum < 3000) {
+    const kyuIndex = Math.floor(eloNum / 100);
+    if (kyuIndex >= 30) return '30 Kyu';
+    if (kyuIndex <= 0) return '30 Kyu';
+    return `${30 - kyuIndex} Kyu`;
+  }
+
+  const danIndex = Math.floor((eloNum - 3000) / 100) + 1;
+  if (danIndex >= 9) return '9 Dan';
+  return `${danIndex} Dan`;
+}
+
 function getWlRatio(player) {
   if (player.losses === 0) {
     return player.wins > 0 ? Number(player.wins).toFixed(1) : '—';
@@ -15,16 +30,12 @@ function renderLeaderboard(players) {
     return;
   }
 
-  tbody.innerHTML = players.map((player, index) => {
-    const rank = index + 1;
-    let rankClass = '';
-    if (rank === 1) rankClass = 'rank-1';
-    if (rank === 2) rankClass = 'rank-2';
-    if (rank === 3) rankClass = 'rank-3';
+  tbody.innerHTML = players.map((player) => {
+    const rankLabel = calculateRank(player.elo_rating);
 
     return `
       <tr>
-        <td class="${rankClass}">${rank}</td>
+        <td>${rankLabel}</td>
         <td>${player.username}</td>
         <td><strong>${player.elo_rating}</strong></td>
         <td>${player.wins || 0}</td>
@@ -40,9 +51,7 @@ async function loadLeaderboard() {
 
   try {
     const response = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error('Could not load data.json');
-    }
+    if (!response.ok) throw new Error('Could not load data.json');
 
     const data = await response.json();
     const players = Array.isArray(data.players) ? data.players : [];
