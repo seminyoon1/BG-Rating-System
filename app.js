@@ -258,7 +258,7 @@ async function handleExportGames() {
   try {
     await eloDb.ready;
     const matches = await eloDb.getAllMatches();
-    
+
     const games = matches.map((match) => ({
       white: match.white || 'Unknown',
       black: match.black || 'Unknown',
@@ -266,7 +266,7 @@ async function handleExportGames() {
       name: match.name || 'Unnamed Game',
       link: match.link || '#'
     }));
-    
+
     const data = { games };
     downloadJSON(data, 'games.json');
   } catch (error) {
@@ -305,8 +305,8 @@ async function handleAddGame(event) {
   const link = document.getElementById('gameLink').value.trim();
 
   try {
-    if (!white || !black || !winner) {
-      throw new Error('Please fill in all required fields');
+    if (!white || !black || !winner || !name || !link) {
+      throw new Error('Please fill in all fields');
     }
 
     if (white === black) {
@@ -314,27 +314,38 @@ async function handleAddGame(event) {
     }
 
     if (winner !== 'White' && winner !== 'Black') {
-      throw new Error('Winner must be White or Black');
+      throw new Error('Please select a winner');
+    }
+
+    await eloDb.ready;
+
+    const whitePlayer = await eloDb.getPlayer(white);
+    if (!whitePlayer) {
+      throw new Error(`White player "${white}" was not found in the player list`);
+    }
+
+    const blackPlayer = await eloDb.getPlayer(black);
+    if (!blackPlayer) {
+      throw new Error(`Black player "${black}" was not found in the player list`);
     }
 
     const winnerName = winner === 'White' ? white : black;
     const loserName = winner === 'White' ? black : white;
 
-    await eloDb.ready;
-    const result = await eloDb.recordMatch(winnerName, loserName, {
+    await eloDb.recordMatch(winnerName, loserName, {
       white,
       black,
       winnerSide: winner,
-      name: name || 'Unnamed Game',
-      link: link || '#'
+      name,
+      link
     });
 
     allGames.unshift({
       white,
       black,
       winner,
-      name: name || 'Unnamed Game',
-      link: link || '#'
+      name,
+      link
     });
 
     renderGames(allGames);
@@ -357,8 +368,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const exportPlayersBtn = document.getElementById('exportPlayersBtn');
   const exportGamesBtn = document.getElementById('exportGamesBtn');
 
-  console.log('Export buttons found:', { exportPlayersBtn, exportGamesBtn });
-
   if (addPlayerForm) {
     addPlayerForm.addEventListener('submit', handleAddPlayer);
   }
@@ -368,16 +377,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (exportPlayersBtn) {
-    console.log('Attaching click handler to export players button');
     exportPlayersBtn.addEventListener('click', handleExportPlayers);
-  } else {
-    console.warn('Export players button not found');
   }
 
   if (exportGamesBtn) {
-    console.log('Attaching click handler to export games button');
     exportGamesBtn.addEventListener('click', handleExportGames);
-  } else {
-    console.warn('Export games button not found');
   }
 });
