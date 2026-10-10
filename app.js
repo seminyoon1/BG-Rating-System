@@ -73,7 +73,7 @@ function renderGames(games) {
   const tbody = document.getElementById('gamesBody');
 
   if (!games.length) {
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-row">No games yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No games yet.</td></tr>';
     return;
   }
 
@@ -129,7 +129,7 @@ async function loadGames() {
     allGames = Array.isArray(data.games) ? data.games : [];
     renderGames(allGames);
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="3" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
   }
 }
 
@@ -160,8 +160,82 @@ function bindTabs() {
   });
 }
 
+function showMessage(elementId, message, isSuccess) {
+  const messageEl = document.getElementById(elementId);
+  messageEl.textContent = message;
+  messageEl.className = `message ${isSuccess ? 'success' : 'error'}`;
+  setTimeout(() => {
+    messageEl.className = 'message';
+  }, 3000);
+}
+
+function handleAddPlayer(e) {
+  e.preventDefault();
+  
+  const username = document.getElementById('playerUsername').value.trim();
+  const elo = Number(document.getElementById('playerELO').value);
+  const wins = Number(document.getElementById('playerWins').value);
+  const losses = Number(document.getElementById('playerLosses').value);
+
+  if (!username) {
+    showMessage('addPlayerMessage', 'Please enter a username', false);
+    return;
+  }
+
+  const newPlayer = {
+    username,
+    elo_rating: elo,
+    wins,
+    losses
+  };
+
+  // Add to local array (in a real app, this would POST to a backend)
+  allPlayers.push(newPlayer);
+  allPlayers.sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating));
+  renderLeaderboard(allPlayers);
+
+  showMessage('addPlayerMessage', `Player "${username}" added successfully!`, true);
+  document.getElementById('addPlayerForm').reset();
+  document.getElementById('playerELO').value = '1500';
+  document.getElementById('playerWins').value = '0';
+  document.getElementById('playerLosses').value = '0';
+}
+
+function handleAddGame(e) {
+  e.preventDefault();
+  
+  const white = document.getElementById('gameWhite').value.trim();
+  const black = document.getElementById('gameBlack').value.trim();
+  const winner = document.getElementById('gameWinner').value;
+  const name = document.getElementById('gameName').value.trim();
+  const link = document.getElementById('gameLink').value.trim();
+
+  if (!white || !black || !winner) {
+    showMessage('addGameMessage', 'Please fill in all required fields', false);
+    return;
+  }
+
+  const newGame = {
+    white,
+    black,
+    winner,
+    name: name || 'Unnamed Game',
+    link: link || 'https://example.com'
+  };
+
+  // Add to local array (in a real app, this would POST to a backend)
+  allGames.push(newGame);
+  renderGames(allGames);
+
+  showMessage('addGameMessage', 'Game added successfully!', true);
+  document.getElementById('addGameForm').reset();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   bindTabs();
   loadLeaderboard();
   loadGames();
+  
+  document.getElementById('addPlayerForm').addEventListener('submit', handleAddPlayer);
+  document.getElementById('addGameForm').addEventListener('submit', handleAddGame);
 });
