@@ -79,76 +79,64 @@ function renderGames(games) {
   }).join('');
 }
 
-async function importSeedDataIfNeeded() {
+// Always pulls the latest data.json and games.json and replaces local data.
+// Runs once per page load. If the files can't be fetched, local data is kept.
+async function syncFromJsonFiles() {
   try {
     await eloDb.ready;
 
-    const storedPlayers = await eloDb.getAllPlayers();
-    if (storedPlayers.length === 0) {
-      try {
-        const playersResponse = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
-        if (playersResponse.ok) {
-          const playersData = await playersResponse.json();
-          if (Array.isArray(playersData.players)) {
-            const normalizedPlayers = playersData.players.map((player) => ({
-              username: String(player.username || '').trim(),
-              elo_rating: Number(player.elo_rating) || 1000,
-              wins: Number(player.wins) || 0,
-              losses: Number(player.losses) || 0,
-              created_at: player.created_at || new Date().toISOString()
-            }));
+    const [playersResponse, gamesResponse] = await Promise.all([
+      fetch('data.json?t=' + Date.now(), { cache: 'no-store' }),
+      fetch('games.json?t=' + Date.now(), { cache: 'no-store' })
+    ]);
 
-            await eloDb.importData({
-              players: normalizedPlayers,
-              matches: []
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('Could not load data.json:', e);
+    if (!playersResponse.ok) {
+      throw new Error('data.json returned status ' + playersResponse.status);
+    }
+
+    const playersData = await playersResponse.json();
+    if (!Array.isArray(playersData.players)) {
+      throw new Error('data.json has no players array');
+    }
+
+    const players = playersData.players.map((player) => ({
+      username: String(player.username || '').trim(),
+      elo_rating: Number(player.elo_rating) || 1000,
+      wins: Number(player.wins) || 0,
+      losses: Number(player.losses) || 0,
+      created_at: player.created_at || new Date().toISOString()
+    })).filter((player) => player.username);
+
+    let matches = [];
+    if (gamesResponse.ok) {
+      const gamesData = await gamesResponse.json();
+      if (Array.isArray(gamesData.games)) {
+        // Stored newest-first order is preserved by keeping file order
+        matches = gamesData.games.map((game) => {
+          const white = String(game.white || '').trim();
+          const black = String(game.black || '').trim();
+          const winnerSide = String(game.winner || '').trim();
+          const winner = winnerSide === 'White' ? white : black;
+          const loser = winnerSide === 'White' ? black : white;
+
+          return {
+            winner,
+            loser,
+            white,
+            black,
+            winner_side: winnerSide,
+            handicap: Number(game.handicap) || 0,
+            name: game.name || 'Unnamed Game',
+            link: game.link || '#',
+            created_at: new Date().toISOString()
+          };
+        });
       }
     }
 
-    const matchesBeforeSeed = await eloDb.getAllMatches();
-    if (matchesBeforeSeed.length === 0) {
-      try {
-        const gamesResponse = await fetch('games.json?t=' + Date.now(), { cache: 'no-store' });
-        if (gamesResponse.ok) {
-          const gamesData = await gamesResponse.json();
-          if (Array.isArray(gamesData.games)) {
-            const existingPlayers = await eloDb.getAllPlayers();
-            const seedMatches = gamesData.games.map((game) => {
-              const white = String(game.white || '').trim();
-              const black = String(game.black || '').trim();
-              const winnerSide = String(game.winner || '').trim();
-              const winner = winnerSide === 'White' ? white : black;
-              const loser = winnerSide === 'White' ? black : white;
-
-              return {
-                winner,
-                loser,
-                white,
-                black,
-                winner_side: winnerSide,
-                handicap: Number(game.handicap) || 0,
-                name: game.name || 'Unnamed Game',
-                link: game.link || '#',
-                created_at: new Date().toISOString()
-              };
-            });
-
-            await eloDb.importData({
-              players: existingPlayers,
-              matches: seedMatches
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('Could not load games.json:', e);
-      }
-    }
+    await eloDb.importData({ players, matches });
   } catch (error) {
-    console.warn('Seed import failed:', error);
+    console.warn('Could not sync from JSON files, using local data instead:', error);
   }
 }
 
@@ -157,7 +145,6 @@ async function loadLeaderboard() {
 
   try {
     await eloDb.ready;
-    await importSeedDataIfNeeded();
     const players = await eloDb.getAllPlayers();
     allPlayers = players;
 
@@ -177,7 +164,6 @@ async function loadGames() {
 
   try {
     await eloDb.ready;
-    await importSeedDataIfNeeded();
     const matches = await eloDb.getAllMatches();
 
     allGames = matches.map((match) => ({
@@ -372,7 +358,7 @@ async function handleAddGame(event) {
 
 window.addEventListener('DOMContentLoaded', async () => {
   bindTabs();
-  await importSeedDataIfNeeded();
+  await syncFromJsonFiles();
   await loadLeaderboard();
   await loadGames();
 
