@@ -31,6 +31,12 @@ class ELODatabase {
     });
   }
 
+  applyDanAdjustment(eloValue) {
+    const safeElo = Number(eloValue) || 0;
+    const adjustment = safeElo > 3100 ? -0.005 : 0.005;
+    return Math.max(0, Number((safeElo + adjustment).toFixed(3)));
+  }
+
   async addPlayer(username, initialElo = 1000) {
     const clean = String(username || '').trim();
     if (!clean) throw new Error('Username is required');
@@ -124,9 +130,12 @@ class ELODatabase {
     const oldLoserElo = loserPlayer.elo_rating;
     const { newWinnerElo, newLoserElo } = this.calculateELO(oldWinnerElo, oldLoserElo);
 
-    winnerPlayer.elo_rating = newWinnerElo;
+    const adjustedWinnerElo = this.applyDanAdjustment(newWinnerElo);
+    const adjustedLoserElo = this.applyDanAdjustment(newLoserElo);
+
+    winnerPlayer.elo_rating = adjustedWinnerElo;
     winnerPlayer.wins = (winnerPlayer.wins || 0) + 1;
-    loserPlayer.elo_rating = newLoserElo;
+    loserPlayer.elo_rating = adjustedLoserElo;
     loserPlayer.losses = (loserPlayer.losses || 0) + 1;
 
     await new Promise((resolve, reject) => {
@@ -145,9 +154,9 @@ class ELODatabase {
         name: matchName,
         link,
         winner_before: oldWinnerElo,
-        winner_after: newWinnerElo,
+        winner_after: adjustedWinnerElo,
         loser_before: oldLoserElo,
-        loser_after: newLoserElo,
+        loser_after: adjustedLoserElo,
         created_at: new Date().toISOString()
       });
 
@@ -159,12 +168,12 @@ class ELODatabase {
       winner: {
         username: winner,
         oldElo: oldWinnerElo,
-        newElo: newWinnerElo
+        newElo: adjustedWinnerElo
       },
       loser: {
         username: loser,
         oldElo: oldLoserElo,
-        newElo: newLoserElo
+        newElo: adjustedLoserElo
       }
     };
   }
