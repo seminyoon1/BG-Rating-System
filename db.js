@@ -36,13 +36,12 @@ class ELODatabase {
     const safeNewElo = Number(newElo) || 0;
     const eloChange = safeNewElo - safeOldElo;
 
-    if (safeOldElo > 3100) {
-      if (eloChange > 0) {
-        const adjusted = safeNewElo - 0.005;
-        return Math.max(0, Number(adjusted.toFixed(3)));
-      } else {
-        return safeOldElo;
-      }
+    if (safeOldElo >= 3100) {
+      const adjustedChange = eloChange > 0
+        ? Math.max(0, eloChange - 0.005)
+        : eloChange - 0.005;
+
+      return Math.max(0, Number((safeOldElo + adjustedChange).toFixed(3)));
     }
 
     return Math.max(0, safeNewElo);
