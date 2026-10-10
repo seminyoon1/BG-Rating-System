@@ -21,25 +21,9 @@ function calculateRank(elo) {
   return `${danIndex} Dan`;
 }
 
-function calculateELO(winnerElo, loserElo, kFactor = 32) {
-  const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 190));
-  const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 190));
-
-  const normalWinnerGain = kFactor * (1 - expectedWinner);
-  const normalLoserLoss = kFactor * (0 - expectedLoser);
-
-  const winnerChange = normalWinnerGain + 0.005;
-  const loserChange = normalLoserLoss + 0.005;
-
-  const newWinnerElo = truncateToHundredth(Number(winnerElo) + winnerChange);
-  const newLoserElo = truncateToHundredth(Number(loserElo) + loserChange);
-
-  return { newWinnerElo, newLoserElo };
-}
-
 function getWlRatio(player) {
-  if (player.losses === 0) {
-    return player.wins > 0 ? Number(player.wins).toFixed(1) : '—';
+  if (Number(player.losses) === 0) {
+    return Number(player.wins) > 0 ? Number(player.wins).toFixed(1) : '—';
   }
   return (Number(player.wins) / Number(player.losses)).toFixed(2);
 }
@@ -97,17 +81,11 @@ async function loadLeaderboard() {
   const tbody = document.getElementById('leaderboardBody');
 
   try {
-    const response = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
-    if (!response.ok) throw new Error('Could not load data.json');
+    await eloDb.ready;
+    const players = await eloDb.getAllPlayers();
+    allPlayers = players;
 
-    const data = await response.json();
-    const players = Array.isArray(data.players) ? data.players : [];
-
-    allPlayers = players
-      .slice()
-      .sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating) || String(a.username).localeCompare(String(b.username)));
-
-    const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
+    const searchValue = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
     const filtered = searchValue
       ? allPlayers.filter((player) => String(player.username).toLowerCase().includes(searchValue))
       : allPlayers;
@@ -122,11 +100,17 @@ async function loadGames() {
   const tbody = document.getElementById('gamesBody');
 
   try {
-    const response = await fetch('games.json?t=' + Date.now(), { cache: 'no-store' });
-    if (!response.ok) throw new Error('Could not load games.json');
+    await eloDb.ready;
+    const matches = await eloDb.getAllMatches();
 
-    const data = await response.json();
-    allGames = Array.isArray(data.games) ? data.games : [];
+    allGames = matches.map((match) => ({
+      white: match.winner === 'White' ? match.winner : match.loser,
+      black: match.winner === 'Black' ? match.winner : match.loser,
+      winner: match.winner,
+      name: match.name || 'Unnamed Game',
+      link: match.link || '#'
+    }));
+
     renderGames(allGames);
   } catch (error) {
     tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
@@ -162,6 +146,8 @@ function bindTabs() {
 
 function showMessage(elementId, message, isSuccess) {
   const messageEl = document.getElementById(elementId);
+  if (!messageEl) return;
+
   messageEl.textContent = message;
   messageEl.className = `message ${isSuccess ? 'success' : 'error'}`;
   setTimeout(() => {
@@ -169,73 +155,92 @@ function showMessage(elementId, message, isSuccess) {
   }, 3000);
 }
 
-function handleAddPlayer(e) {
-  e.preventDefault();
-  
+async function handleAddPlayer(event) {
+  event.preventDefault();
+
   const username = document.getElementById('playerUsername').value.trim();
-  const elo = Number(document.getElementById('playerELO').value);
-  const wins = Number(document.getElementById('playerWins').value);
-  const losses = Number(document.getElementById('playerLosses').value);
+  const elo = Number(document.getElementById('playerELO').value) || 1000;
 
-  if (!username) {
-    showMessage('addPlayerMessage', 'Please enter a username', false);
-    return;
+  try {
+    await eloDb.ready;
+    const player = await eloDb.addPlayer(username, elo);
+    allPlayers.push(player);
+    allPlayers.sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating));
+    renderLeaderboard(allPlayers);
+    showMessage('addPlayerMessage', `Player "${player.username}" added successfully!`, true);
+    document.getElementById('addPlayerForm').reset();
+    document.getElementById('playerELO').value = '1500';
+  } catch (error) {
+    showMessage('addPlayerMessage', error.message, false);
   }
-
-  const newPlayer = {
-    username,
-    elo_rating: elo,
-    wins,
-    losses
-  };
-
-  // Add to local array (in a real app, this would POST to a backend)
-  allPlayers.push(newPlayer);
-  allPlayers.sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating));
-  renderLeaderboard(allPlayers);
-
-  showMessage('addPlayerMessage', `Player "${username}" added successfully!`, true);
-  document.getElementById('addPlayerForm').reset();
-  document.getElementById('playerELO').value = '1500';
-  document.getElementById('playerWins').value = '0';
-  document.getElementById('playerLosses').value = '0';
 }
 
-function handleAddGame(e) {
-  e.preventDefault();
-  
+async function handleAddGame(event) {
+  event.preventDefault();
+
   const white = document.getElementById('gameWhite').value.trim();
   const black = document.getElementById('gameBlack').value.trim();
   const winner = document.getElementById('gameWinner').value;
   const name = document.getElementById('gameName').value.trim();
   const link = document.getElementById('gameLink').value.trim();
 
-  if (!white || !black || !winner) {
-    showMessage('addGameMessage', 'Please fill in all required fields', false);
-    return;
+  try {
+    if (!white || !black || !winner) {
+      throw new Error('Please fill in all required fields');
+    }
+
+    if (white === black) {
+      throw new Error('White and black cannot be the same player');
+    }
+
+    if (winner !== 'White' && winner !== 'Black') {
+      throw new Error('Winner must be White or Black');
+    }
+
+    const winnerName = winner === 'White' ? white : black;
+    const loserName = winner === 'White' ? black : white;
+
+    await eloDb.ready;
+    const result = await eloDb.recordMatch(winnerName, loserName);
+
+    const matchEntry = {
+      winner: winner,
+      white,
+      black,
+      loser: loserName,
+      name: name || 'Unnamed Game',
+      link: link || '#',
+      created_at: new Date().toISOString(),
+      winner_before: result.winner.oldElo,
+      winner_after: result.winner.newElo,
+      loser_before: result.loser.oldElo,
+      loser_after: result.loser.newElo
+    };
+
+    allGames.unshift(matchEntry);
+    renderGames(allGames);
+
+    await loadLeaderboard();
+    showMessage('addGameMessage', `${winnerName} beat ${loserName}. ELO updated successfully!`, true);
+    document.getElementById('addGameForm').reset();
+  } catch (error) {
+    showMessage('addGameMessage', error.message, false);
   }
-
-  const newGame = {
-    white,
-    black,
-    winner,
-    name: name || 'Unnamed Game',
-    link: link || 'https://example.com'
-  };
-
-  // Add to local array (in a real app, this would POST to a backend)
-  allGames.push(newGame);
-  renderGames(allGames);
-
-  showMessage('addGameMessage', 'Game added successfully!', true);
-  document.getElementById('addGameForm').reset();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   bindTabs();
-  loadLeaderboard();
-  loadGames();
-  
-  document.getElementById('addPlayerForm').addEventListener('submit', handleAddPlayer);
-  document.getElementById('addGameForm').addEventListener('submit', handleAddGame);
+  await loadLeaderboard();
+  await loadGames();
+
+  const addPlayerForm = document.getElementById('addPlayerForm');
+  const addGameForm = document.getElementById('addGameForm');
+
+  if (addPlayerForm) {
+    addPlayerForm.addEventListener('submit', handleAddPlayer);
+  }
+
+  if (addGameForm) {
+    addGameForm.addEventListener('submit', handleAddGame);
+  }
 });
