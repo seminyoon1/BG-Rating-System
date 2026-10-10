@@ -14,6 +14,8 @@
       <div class="card-tabs">
         <button class="tab active" data-tab="players" type="button">Player List</button>
         <button class="tab" data-tab="games" type="button">Games</button>
+        <button class="tab" data-tab="addPlayer" type="button">Add Player</button>
+        <button class="tab" data-tab="addGame" type="button">Add Game</button>
       </div>
 
       <div id="playersView" class="tab-panel active">
@@ -49,6 +51,69 @@
             <tbody id="gamesBody"></tbody>
           </table>
         </div>
+      </div>
+
+      <div id="addPlayerView" class="tab-panel">
+        <form id="addPlayerForm" class="form-group">
+          <div class="form-field">
+            <label for="playerUsername">Username</label>
+            <input id="playerUsername" type="text" placeholder="Enter username" required />
+          </div>
+
+          <div class="form-field">
+            <label for="playerELO">ELO Rating</label>
+            <input id="playerELO" type="number" placeholder="Enter ELO rating" value="1500" required />
+          </div>
+
+          <div class="form-field">
+            <label for="playerWins">Wins</label>
+            <input id="playerWins" type="number" placeholder="Enter wins" value="0" required />
+          </div>
+
+          <div class="form-field">
+            <label for="playerLosses">Losses</label>
+            <input id="playerLosses" type="number" placeholder="Enter losses" value="0" required />
+          </div>
+
+          <button type="submit" class="primary">Add Player</button>
+          <div id="addPlayerMessage" class="message"></div>
+        </form>
+      </div>
+
+      <div id="addGameView" class="tab-panel">
+        <form id="addGameForm" class="form-group">
+          <div class="form-field">
+            <label for="gameWhite">White Player</label>
+            <input id="gameWhite" type="text" placeholder="Enter white player name" required />
+          </div>
+
+          <div class="form-field">
+            <label for="gameBlack">Black Player</label>
+            <input id="gameBlack" type="text" placeholder="Enter black player name" required />
+          </div>
+
+          <div class="form-field">
+            <label for="gameWinner">Winner</label>
+            <select id="gameWinner" required>
+              <option value="">Select winner</option>
+              <option value="White">White</option>
+              <option value="Black">Black</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="gameName">Game Name</label>
+            <input id="gameName" type="text" placeholder="Enter game name (optional)" />
+          </div>
+
+          <div class="form-field">
+            <label for="gameLink">Game Link</label>
+            <input id="gameLink" type="url" placeholder="Enter game link (optional)" />
+          </div>
+
+          <button type="submit" class="primary">Add Game</button>
+          <div id="addGameMessage" class="message"></div>
+        </form>
       </div>
     </div>
   </div>
