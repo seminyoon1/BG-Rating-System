@@ -229,6 +229,52 @@ function showMessage(elementId, message, isSuccess) {
   }, 3000);
 }
 
+function downloadJSON(data, filename) {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function handleExportPlayers() {
+  try {
+    await eloDb.ready;
+    const players = await eloDb.getAllPlayers();
+    const data = { players };
+    downloadJSON(data, 'data.json');
+  } catch (error) {
+    console.error('Export players failed:', error);
+    alert('Failed to export players: ' + error.message);
+  }
+}
+
+async function handleExportGames() {
+  try {
+    await eloDb.ready;
+    const matches = await eloDb.getAllMatches();
+    
+    const games = matches.map((match) => ({
+      white: match.white || 'Unknown',
+      black: match.black || 'Unknown',
+      winner: match.winner_side || 'White',
+      name: match.name || 'Unnamed Game',
+      link: match.link || '#'
+    }));
+    
+    const data = { games };
+    downloadJSON(data, 'games.json');
+  } catch (error) {
+    console.error('Export games failed:', error);
+    alert('Failed to export games: ' + error.message);
+  }
+}
+
 async function handleAddPlayer(event) {
   event.preventDefault();
 
@@ -308,6 +354,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const addPlayerForm = document.getElementById('addPlayerForm');
   const addGameForm = document.getElementById('addGameForm');
+  const exportPlayersBtn = document.getElementById('exportPlayersBtn');
+  const exportGamesBtn = document.getElementById('exportGamesBtn');
 
   if (addPlayerForm) {
     addPlayerForm.addEventListener('submit', handleAddPlayer);
@@ -315,5 +363,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   if (addGameForm) {
     addGameForm.addEventListener('submit', handleAddGame);
+  }
+
+  if (exportPlayersBtn) {
+    exportPlayersBtn.addEventListener('click', handleExportPlayers);
+  }
+
+  if (exportGamesBtn) {
+    exportGamesBtn.addEventListener('click', handleExportGames);
   }
 });
