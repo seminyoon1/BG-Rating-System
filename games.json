@@ -1,12 +1,12 @@
 {
   "games": [
     {
-      "white": "Player1",
-      "black": "Player2",
+      "white": "Seminyoon1",
+      "black": "Mykyta",
       "winner": "White",
       "handicap": 0,
-      "name": "BG Tournament Group A",
-      "link": "https://example.com/game/1"
+      "name": "BG Friendly Game",
+      "link": "https://online-go.com/game/91471473"
     }
   ]
 }
