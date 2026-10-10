@@ -31,6 +31,7 @@ h2 {
   gap: 12px;
   margin-bottom: 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  flex-wrap: wrap;
 }
 
 .tab {
@@ -81,6 +82,24 @@ h2 {
   padding-bottom: 18px;
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field label {
+  font-weight: 600;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
 .row {
   display: flex;
   gap: 10px;
@@ -93,7 +112,8 @@ h2 {
   gap: 12px;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #475569;
@@ -101,12 +121,21 @@ input {
   background: #0f172a;
   color: white;
   font-size: 1rem;
-  margin-bottom: 12px;
 }
 
-input:focus {
+input:focus,
+select:focus {
   outline: 2px solid #60a5fa;
   border-color: transparent;
+}
+
+select {
+  cursor: pointer;
+}
+
+select option {
+  background: #0f172a;
+  color: white;
 }
 
 button {
@@ -244,6 +273,15 @@ a:hover {
 }
 
 @media (max-width: 640px) {
+  .card-tabs {
+    gap: 8px;
+  }
+
+  .tab {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
   .row.split {
     grid-template-columns: 1fr;
   }
