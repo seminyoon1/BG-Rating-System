@@ -1,15 +1,15 @@
 {
   "players": [
     {
-      "username": "seminyoon1",
-      "elo_rating": 2000,
+      "username": "Dal",
+      "elo_rating": 1850,
       "wins": 0,
       "losses": 0,
       "created_at": "2026-10-09T22:00:00Z"
     },
     {
-      "username": "seminyoon2",
-      "elo_rating": 2100,
+      "username": "MikioKira",
+      "elo_rating": 1500,
       "wins": 0,
       "losses": 0,
       "created_at": "2026-10-09T22:00:00Z"
