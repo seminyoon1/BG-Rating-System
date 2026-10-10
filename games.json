@@ -4,12 +4,14 @@
       "white": "Player1",
       "black": "Player2",
       "winner": "White",
+      "name": "BG Tournament Group A",
       "link": "https://example.com/game/1"
     },
     {
       "white": "Player3",
       "black": "Player4",
       "winner": "Black",
+      "name": "BG Tournament Group B",
       "link": "https://example.com/game/2"
     }
   ]
