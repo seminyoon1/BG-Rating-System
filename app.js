@@ -81,25 +81,19 @@ function renderGames(games) {
   }).join('');
 }
 
+async function fetchAndCache(type, key) {
+  const res = await fetch(`${SHEET_URL}?type=${type}`);
+  const data = await res.json();
+  const list = data[type] || [];
+  localStorage.setItem(key, JSON.stringify(list));
+  return list;
+}
+
 async function loadPlayersFromSheet() {
   try {
-    const cached = localStorage.getItem('players_cache');
-    if (cached) {
-      // Return cached data instantly
-      return JSON.parse(cached);
-    }
-
-    // Fetch fresh data in background
-    const res = await fetch(`${SHEET_URL}?type=players`);
-    const data = await res.json();
-    const players = data.players || [];
-    
-    // Cache for next load
-    localStorage.setItem('players_cache', JSON.stringify(players));
-    return players;
+    return await fetchAndCache('players', 'players_cache');
   } catch (error) {
     console.error('Failed to load players from sheet:', error);
-    // Fallback to stale cache if fetch fails
     const cached = localStorage.getItem('players_cache');
     return cached ? JSON.parse(cached) : [];
   }
@@ -107,60 +101,55 @@ async function loadPlayersFromSheet() {
 
 async function loadGamesFromSheet() {
   try {
-    const cached = localStorage.getItem('games_cache');
-    if (cached) {
-      // Return cached data instantly (reversed)
-      return JSON.parse(cached).reverse();
-    }
-
-    // Fetch fresh data in background
-    const res = await fetch(`${SHEET_URL}?type=games`);
-    const data = await res.json();
-    const games = data.games || [];
-    
-    // Cache for next load
-    localStorage.setItem('games_cache', JSON.stringify(games));
-    
-    // Reverse to show newest first
-    return games.reverse();
+    return await fetchAndCache('games', 'games_cache');
   } catch (error) {
     console.error('Failed to load games from sheet:', error);
-    // Fallback to stale cache if fetch fails
     const cached = localStorage.getItem('games_cache');
-    return cached ? JSON.parse(cached).reverse() : [];
+    return cached ? JSON.parse(cached) : [];
   }
 }
 
 async function loadLeaderboard() {
   const tbody = document.getElementById('leaderboardBody');
 
-  try {
-    const players = await loadPlayersFromSheet();
-    allPlayers = players;
-
-    // Sort by ELO descending
-    allPlayers.sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating));
-
+  const apply = (players) => {
+    allPlayers = players.slice().sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating));
     const searchValue = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
     const filtered = searchValue
       ? allPlayers.filter((player) => String(player.username).toLowerCase().includes(searchValue))
       : allPlayers;
-
     renderLeaderboard(filtered);
+  };
+
+  const cached = localStorage.getItem('players_cache');
+  if (cached) apply(JSON.parse(cached));
+
+  try {
+    apply(await loadPlayersFromSheet());
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Unable to load leaderboard: ${error.message}</td></tr>`;
+    if (!cached) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Unable to load leaderboard: ${error.message}</td></tr>`;
+    }
   }
 }
 
 async function loadGames() {
   const tbody = document.getElementById('gamesBody');
 
+  const cached = localStorage.getItem('games_cache');
+  if (cached) {
+    allGames = JSON.parse(cached).reverse();
+    renderGames(allGames);
+  }
+
   try {
     const games = await loadGamesFromSheet();
-    allGames = games;
+    allGames = games.slice().reverse();
     renderGames(allGames);
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+    if (!cached) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+    }
   }
 }
 
@@ -229,8 +218,7 @@ async function handleExportPlayers() {
 async function handleExportGames() {
   try {
     const games = await loadGamesFromSheet();
-    // Reverse back to original order (oldest first) for export
-    const data = { games: games.reverse() };
+    const data = { games: games.slice().reverse() };
     downloadJSON(data, 'games.json');
   } catch (error) {
     console.error('Export games failed:', error);
