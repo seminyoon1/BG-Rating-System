@@ -26,30 +26,39 @@ h2 {
   font-size: 1.3rem;
 }
 
-.tabs {
+.card-tabs {
   display: flex;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .tab {
-  flex: 1;
-  background: rgba(15, 23, 42, 0.75);
+  background: transparent;
   border: 1px solid rgba(148, 163, 184, 0.2);
+  border-bottom: none;
+  color: #cbd5e1;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
   border-radius: 10px 10px 0 0;
-  color: #e5e7eb;
-  padding: 12px 16px;
-  font-size: 1rem;
-  font-weight: 700;
+}
+
+.tab:hover {
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .tab.active {
   background: rgba(59, 130, 246, 0.25);
-  border-bottom-color: transparent;
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #e5e7eb;
 }
 
 .tab-panel {
   display: none;
+  padding-top: 18px;
 }
 
 .tab-panel.active {
@@ -60,9 +69,16 @@ h2 {
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 14px;
-  padding: 18px;
+  padding: 0;
   margin-bottom: 18px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.card-tabs + .tab-panel {
+  padding-left: 18px;
+  padding-right: 18px;
+  padding-bottom: 18px;
 }
 
 .row {
@@ -85,6 +101,7 @@ input {
   background: #0f172a;
   color: white;
   font-size: 1rem;
+  margin-bottom: 12px;
 }
 
 input:focus {
@@ -176,7 +193,7 @@ button:hover {
 
 .table-wrap {
   overflow-x: auto;
-  margin-top: 12px;
+  margin-top: 0;
 }
 
 table {
@@ -207,6 +224,13 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+.winner-highlight {
+  border: 2px solid #22c55e;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
 }
 
 .rank-1 { color: #fbbf24; font-weight: 700; }
