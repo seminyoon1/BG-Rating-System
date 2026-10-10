@@ -357,6 +357,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const exportPlayersBtn = document.getElementById('exportPlayersBtn');
   const exportGamesBtn = document.getElementById('exportGamesBtn');
 
+  console.log('Export buttons found:', { exportPlayersBtn, exportGamesBtn });
+
   if (addPlayerForm) {
     addPlayerForm.addEventListener('submit', handleAddPlayer);
   }
@@ -366,10 +368,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (exportPlayersBtn) {
+    console.log('Attaching click handler to export players button');
     exportPlayersBtn.addEventListener('click', handleExportPlayers);
+  } else {
+    console.warn('Export players button not found');
   }
 
   if (exportGamesBtn) {
+    console.log('Attaching click handler to export games button');
     exportGamesBtn.addEventListener('click', handleExportGames);
+  } else {
+    console.warn('Export games button not found');
   }
 });
