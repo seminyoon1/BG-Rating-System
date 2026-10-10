@@ -8,6 +8,27 @@
       "created_at": "2026-10-09T22:00:00Z"
     },
     {
+      "username": "Trickprey",
+      "elo_rating": 3300,
+      "wins": 0,
+      "losses": 0,
+      "created_at": "2026-10-09T22:00:00Z"
+    },
+    {
+      "username": "Dhy",
+      "elo_rating": 3300,
+      "wins": 0,
+      "losses": 0,
+      "created_at": "2026-10-09T22:00:00Z"
+    },
+    {
+      "username": "Dal",
+      "elo_rating": 1900,
+      "wins": 0,
+      "losses": 0,
+      "created_at": "2026-10-09T22:00:00Z"
+    },
+    {
       "username": "MikioKira",
       "elo_rating": 1500,
       "wins": 0,
