@@ -83,24 +83,51 @@ function renderGames(games) {
 
 async function loadPlayersFromSheet() {
   try {
+    const cached = localStorage.getItem('players_cache');
+    if (cached) {
+      // Return cached data instantly
+      return JSON.parse(cached);
+    }
+
+    // Fetch fresh data in background
     const res = await fetch(`${SHEET_URL}?type=players`);
     const data = await res.json();
-    return data.players || [];
+    const players = data.players || [];
+    
+    // Cache for next load
+    localStorage.setItem('players_cache', JSON.stringify(players));
+    return players;
   } catch (error) {
     console.error('Failed to load players from sheet:', error);
-    return [];
+    // Fallback to stale cache if fetch fails
+    const cached = localStorage.getItem('players_cache');
+    return cached ? JSON.parse(cached) : [];
   }
 }
 
 async function loadGamesFromSheet() {
   try {
+    const cached = localStorage.getItem('games_cache');
+    if (cached) {
+      // Return cached data instantly (reversed)
+      return JSON.parse(cached).reverse();
+    }
+
+    // Fetch fresh data in background
     const res = await fetch(`${SHEET_URL}?type=games`);
     const data = await res.json();
+    const games = data.games || [];
+    
+    // Cache for next load
+    localStorage.setItem('games_cache', JSON.stringify(games));
+    
     // Reverse to show newest first
-    return (data.games || []).reverse();
+    return games.reverse();
   } catch (error) {
     console.error('Failed to load games from sheet:', error);
-    return [];
+    // Fallback to stale cache if fetch fails
+    const cached = localStorage.getItem('games_cache');
+    return cached ? JSON.parse(cached).reverse() : [];
   }
 }
 
