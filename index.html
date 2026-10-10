@@ -85,7 +85,7 @@
           <div class="form-field">
             <label for="gameWinner">Winner</label>
             <select id="gameWinner" required>
-              <option value="">Select winner</option>
+              <option value="" disabled selected hidden>Select winner</option>
               <option value="White">White</option>
               <option value="Black">Black</option>
             </select>
@@ -93,12 +93,12 @@
 
           <div class="form-field">
             <label for="gameName">Game Name</label>
-            <input id="gameName" type="text" placeholder="Enter game name (optional)" />
+            <input id="gameName" type="text" placeholder="Enter game name" required />
           </div>
 
           <div class="form-field">
             <label for="gameLink">Game Link</label>
-            <input id="gameLink" type="url" placeholder="Enter game link (optional)" />
+            <input id="gameLink" type="url" placeholder="Enter game link" required />
           </div>
 
           <button type="submit" class="primary">Add Game</button>
