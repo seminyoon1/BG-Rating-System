@@ -34,16 +34,8 @@ class ELODatabase {
   applyDanAdjustment(oldElo, newElo) {
     const safeOldElo = Number(oldElo) || 0;
     const safeNewElo = Number(newElo) || 0;
-    const eloChange = safeNewElo - safeOldElo;
 
-    if (safeOldElo >= 3100) {
-      const adjustedChange = eloChange > 0
-        ? Math.max(0, eloChange - 0.005)
-        : eloChange - 0.005;
-
-      return Math.max(0, Number((safeOldElo + adjustedChange).toFixed(3)));
-    }
-
+    // Dan players do not receive any special bonus / penalty adjustment.
     return Math.max(0, safeNewElo);
   }
 
@@ -110,7 +102,7 @@ class ELODatabase {
     });
   }
 
-  calculateELO(winnerElo, loserElo, kFactor = 20) {
+  calculateELO(winnerElo, loserElo, kFactor = 24) {
     const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 200));
     const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 200));
     const newWinnerElo = Math.round(winnerElo + kFactor * (1 - expectedWinner));
@@ -140,7 +132,6 @@ class ELODatabase {
     const oldWinnerElo = winnerPlayer.elo_rating;
     const oldLoserElo = loserPlayer.elo_rating;
 
-    // Black receives the handicap: bonus = (handicap - 0.5) * 100, only for the calculation
     const handicapBonus = handicap > 0 ? (handicap - 0.5) * 100 : 0;
     const effectiveWinnerElo = oldWinnerElo + (black === winner ? handicapBonus : 0);
     const effectiveLoserElo = oldLoserElo + (black === loser ? handicapBonus : 0);
@@ -149,7 +140,6 @@ class ELODatabase {
     const winnerChange = calc.newWinnerElo - effectiveWinnerElo;
     const loserChange = calc.newLoserElo - effectiveLoserElo;
 
-    // Apply only the rating change to the real (stored) ratings
     const newWinnerElo = Math.round(oldWinnerElo + winnerChange);
     const newLoserElo = Math.max(0, Math.round(oldLoserElo + loserChange));
 
@@ -169,8 +159,8 @@ class ELODatabase {
       playerStore.put(winnerPlayer);
       playerStore.put(loserPlayer);
       matchStore.add({
-        winner: winner,
-        loser: loser,
+        winner,
+        loser,
         white,
         black,
         winner_side: winnerSide,
@@ -189,16 +179,8 @@ class ELODatabase {
     });
 
     return {
-      winner: {
-        username: winner,
-        oldElo: oldWinnerElo,
-        newElo: adjustedWinnerElo
-      },
-      loser: {
-        username: loser,
-        oldElo: oldLoserElo,
-        newElo: adjustedLoserElo
-      }
+      winner: { username: winner, oldElo: oldWinnerElo, newElo: adjustedWinnerElo },
+      loser: { username: loser, oldElo: oldLoserElo, newElo: adjustedLoserElo }
     };
   }
 
@@ -222,10 +204,10 @@ class ELODatabase {
       matchStore.clear();
 
       data.players.forEach((player) => playerStore.put(player));
-      data.matches.forEach((match) => matchStore.put({
-        ...match,
-        handicap: Number(match.handicap) || 0
-      }));
+      data.matches.forEach((match) => {
+        const { id, ...rest } = match;
+        matchStore.add({ ...rest, handicap: Number(match.handicap) || 0 });
+      });
 
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
@@ -235,12 +217,8 @@ class ELODatabase {
   async clearAllData() {
     await new Promise((resolve, reject) => {
       const tx = this.db.transaction(['players', 'matches'], 'readwrite');
-      const playersStore = tx.objectStore('players');
-      const matchesStore = tx.objectStore('matches');
-
-      playersStore.clear();
-      matchesStore.clear();
-
+      tx.objectStore('players').clear();
+      tx.objectStore('matches').clear();
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
