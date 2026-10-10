@@ -77,11 +77,84 @@ function renderGames(games) {
   }).join('');
 }
 
+async function importSeedDataIfNeeded() {
+  try {
+    await eloDb.ready;
+
+    const storedPlayers = await eloDb.getAllPlayers();
+    if (storedPlayers.length === 0) {
+      try {
+        const playersResponse = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+        if (playersResponse.ok) {
+          const playersData = await playersResponse.json();
+          if (Array.isArray(playersData.players)) {
+            const normalizedPlayers = playersData.players.map((player) => ({
+              username: String(player.username || '').trim(),
+              elo_rating: Number(player.elo_rating) || 1000,
+              wins: Number(player.wins) || 0,
+              losses: Number(player.losses) || 0,
+              created_at: player.created_at || new Date().toISOString()
+            }));
+
+            await eloDb.importData({
+              players: normalizedPlayers,
+              matches: []
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load data.json:', e);
+      }
+    }
+
+    const matchesBeforeSeed = await eloDb.getAllMatches();
+    if (matchesBeforeSeed.length === 0) {
+      try {
+        const gamesResponse = await fetch('games.json?t=' + Date.now(), { cache: 'no-store' });
+        if (gamesResponse.ok) {
+          const gamesData = await gamesResponse.json();
+          if (Array.isArray(gamesData.games)) {
+            const existingPlayers = await eloDb.getAllPlayers();
+            const seedMatches = gamesData.games.map((game) => {
+              const white = String(game.white || '').trim();
+              const black = String(game.black || '').trim();
+              const winnerSide = String(game.winner || '').trim();
+              const winner = winnerSide === 'White' ? white : black;
+              const loser = winnerSide === 'White' ? black : white;
+
+              return {
+                winner,
+                loser,
+                white,
+                black,
+                winner_side: winnerSide,
+                name: game.name || 'Unnamed Game',
+                link: game.link || '#',
+                created_at: new Date().toISOString()
+              };
+            });
+
+            await eloDb.importData({
+              players: existingPlayers,
+              matches: seedMatches
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load games.json:', e);
+      }
+    }
+  } catch (error) {
+    console.warn('Seed import failed:', error);
+  }
+}
+
 async function loadLeaderboard() {
   const tbody = document.getElementById('leaderboardBody');
 
   try {
     await eloDb.ready;
+    await importSeedDataIfNeeded();
     const players = await eloDb.getAllPlayers();
     allPlayers = players;
 
@@ -101,12 +174,13 @@ async function loadGames() {
 
   try {
     await eloDb.ready;
+    await importSeedDataIfNeeded();
     const matches = await eloDb.getAllMatches();
 
     allGames = matches.map((match) => ({
-      white: match.winner === 'White' ? match.winner : match.loser,
-      black: match.winner === 'Black' ? match.winner : match.loser,
-      winner: match.winner,
+      white: match.white || match.winner || 'Unknown',
+      black: match.black || match.loser || 'Unknown',
+      winner: match.winner_side || (match.white === match.winner ? 'White' : 'Black') || 'White',
       name: match.name || 'Unnamed Game',
       link: match.link || '#'
     }));
@@ -159,7 +233,7 @@ async function handleAddPlayer(event) {
   event.preventDefault();
 
   const username = document.getElementById('playerUsername').value.trim();
-  const elo = Number(document.getElementById('playerELO').value) || 1000;
+  const elo = Number(document.getElementById('playerELO').value) || 1500;
 
   try {
     await eloDb.ready;
@@ -201,25 +275,23 @@ async function handleAddGame(event) {
     const loserName = winner === 'White' ? black : white;
 
     await eloDb.ready;
-    const result = await eloDb.recordMatch(winnerName, loserName);
-
-    const matchEntry = {
-      winner: winner,
+    const result = await eloDb.recordMatch(winnerName, loserName, {
       white,
       black,
-      loser: loserName,
+      winnerSide: winner,
       name: name || 'Unnamed Game',
-      link: link || '#',
-      created_at: new Date().toISOString(),
-      winner_before: result.winner.oldElo,
-      winner_after: result.winner.newElo,
-      loser_before: result.loser.oldElo,
-      loser_after: result.loser.newElo
-    };
+      link: link || '#'
+    });
 
-    allGames.unshift(matchEntry);
+    allGames.unshift({
+      white,
+      black,
+      winner,
+      name: name || 'Unnamed Game',
+      link: link || '#'
+    });
+
     renderGames(allGames);
-
     await loadLeaderboard();
     showMessage('addGameMessage', `${winnerName} beat ${loserName}. ELO updated successfully!`, true);
     document.getElementById('addGameForm').reset();
@@ -230,6 +302,7 @@ async function handleAddGame(event) {
 
 window.addEventListener('DOMContentLoaded', async () => {
   bindTabs();
+  await importSeedDataIfNeeded();
   await loadLeaderboard();
   await loadGames();
 
