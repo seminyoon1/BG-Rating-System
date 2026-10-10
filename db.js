@@ -110,7 +110,7 @@ class ELODatabase {
     });
   }
 
-  calculateELO(winnerElo, loserElo, kFactor = 20) {
+  calculateELO(winnerElo, loserElo, kFactor = 24) {
     const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 200));
     const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 200));
     const newWinnerElo = Math.round(winnerElo + kFactor * (1 - expectedWinner));
@@ -126,7 +126,7 @@ class ELODatabase {
     const winnerSide = String(options.winnerSide || '').trim() || (white === winner ? 'White' : 'Black');
     const matchName = String(options.name || 'Unnamed Game').trim();
     const link = String(options.link || '#').trim();
-    const handicap = Number(options.handicap) || 0;
+    const handicap = Math.max(0, Math.min(9, Math.floor(Number(options.handicap) || 0)));
 
     if (!winner || !loser) throw new Error('Both usernames are required');
     if (winner === loser) throw new Error('Winner and loser must be different');
@@ -139,7 +139,19 @@ class ELODatabase {
 
     const oldWinnerElo = winnerPlayer.elo_rating;
     const oldLoserElo = loserPlayer.elo_rating;
-    const { newWinnerElo, newLoserElo } = this.calculateELO(oldWinnerElo, oldLoserElo);
+
+    // Black receives the handicap: bonus = (handicap - 0.5) * 100, only for the calculation
+    const handicapBonus = handicap > 0 ? (handicap - 0.5) * 100 : 0;
+    const effectiveWinnerElo = oldWinnerElo + (black === winner ? handicapBonus : 0);
+    const effectiveLoserElo = oldLoserElo + (black === loser ? handicapBonus : 0);
+
+    const calc = this.calculateELO(effectiveWinnerElo, effectiveLoserElo);
+    const winnerChange = calc.newWinnerElo - effectiveWinnerElo;
+    const loserChange = calc.newLoserElo - effectiveLoserElo;
+
+    // Apply only the rating change to the real (stored) ratings
+    const newWinnerElo = Math.round(oldWinnerElo + winnerChange);
+    const newLoserElo = Math.max(0, Math.round(oldLoserElo + loserChange));
 
     const adjustedWinnerElo = this.applyDanAdjustment(oldWinnerElo, newWinnerElo);
     const adjustedLoserElo = this.applyDanAdjustment(oldLoserElo, newLoserElo);

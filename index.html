@@ -1,98 +1,129 @@
-async function handleAddGame(event) {
-  event.preventDefault();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BG Rating System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>BG Rating System</h1>
 
-  const white = document.getElementById('gameWhite').value.trim();
-  const black = document.getElementById('gameBlack').value.trim();
-  const winner = document.getElementById('gameWinner').value;
-  const name = document.getElementById('gameName').value.trim();
-  const link = document.getElementById('gameLink').value.trim();
-  const handicap = Number(document.getElementById('gameHandicap').value) || 0;
+    <div class="card">
+      <div class="card-tabs">
+        <button class="tab active" data-tab="players" type="button">Player List</button>
+        <button class="tab" data-tab="games" type="button">Recent Games</button>
+        <button class="tab" data-tab="addPlayer" type="button">Add Player</button>
+        <button class="tab" data-tab="addGame" type="button">Add Game</button>
+      </div>
 
-  try {
-    if (!white || !black || !winner || !name || !link) {
-      throw new Error('Please fill in all fields');
-    }
+      <div id="playersView" class="tab-panel active">
+        <input id="searchInput" type="text" placeholder="Search username..." oninput="filterLeaderboard()" />
+        <div class="table-wrap scrollable-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Username</th>
+                <th>ELO</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>W/L</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
+        </div>
+      </div>
 
-    if (white === black) {
-      throw new Error('White and black cannot be the same player');
-    }
+      <div id="gamesView" class="tab-panel">
+        <div class="table-wrap scrollable-table">
+          <table>
+            <thead>
+              <tr>
+                <th>White</th>
+                <th>Black</th>
+                <th>Handicap</th>
+                <th>Name</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody id="gamesBody"></tbody>
+          </table>
+        </div>
+      </div>
 
-    if (winner !== 'White' && winner !== 'Black') {
-      throw new Error('Please select a winner');
-    }
+      <div id="addPlayerView" class="tab-panel">
+        <form id="addPlayerForm" class="form-group">
+          <div class="form-field">
+            <label for="playerUsername">Username</label>
+            <input id="playerUsername" type="text" placeholder="Enter username" required />
+          </div>
 
-    if (handicap < 0 || handicap > 9 || !Number.isInteger(handicap)) {
-      throw new Error('Handicap must be an integer between 0 and 9');
-    }
+          <div class="form-field">
+            <label for="playerELO">ELO Rating</label>
+            <input id="playerELO" type="number" placeholder="Enter ELO rating" value="1500" required />
+          </div>
 
-    await eloDb.ready;
+          <button type="submit" class="primary">Add Player</button>
+          <div id="addPlayerMessage" class="message"></div>
+        </form>
+      </div>
 
-    const whitePlayer = await eloDb.getPlayer(white);
-    if (!whitePlayer) {
-      throw new Error(`White player "${white}" was not found in the player list`);
-    }
+      <div id="addGameView" class="tab-panel">
+        <form id="addGameForm" class="form-group">
+          <div class="form-field">
+            <label for="gameWhite">White Player</label>
+            <input id="gameWhite" type="text" placeholder="Enter white player name" required />
+          </div>
 
-    const blackPlayer = await eloDb.getPlayer(black);
-    if (!blackPlayer) {
-      throw new Error(`Black player "${black}" was not found in the player list`);
-    }
+          <div class="form-field">
+            <label for="gameBlack">Black Player</label>
+            <input id="gameBlack" type="text" placeholder="Enter black player name" required />
+          </div>
 
-    const winnerName = winner === 'White' ? white : black;
-    const loserName = winner === 'White' ? black : white;
+          <div class="form-field">
+            <label for="gameWinner">Winner</label>
+            <select id="gameWinner" required>
+              <option value="" disabled selected hidden>Select winner</option>
+              <option value="White">White</option>
+              <option value="Black">Black</option>
+            </select>
+          </div>
 
-    await eloDb.recordMatch(winnerName, loserName, {
-      white,
-      black,
-      winnerSide: winner,
-      handicap,
-      name,
-      link
-    });
+          <div class="form-field">
+            <label for="gameName">Game Name</label>
+            <input id="gameName" type="text" placeholder="Enter game name" required />
+          </div>
 
-    allGames.unshift({
-      white,
-      black,
-      winner,
-      handicap,
-      name,
-      link
-    });
+          <div class="form-field">
+            <label for="gameLink">Game Link</label>
+            <input id="gameLink" type="url" placeholder="Enter game link" required />
+          </div>
 
-    renderGames(allGames);
-    await loadLeaderboard();
-    showMessage('addGameMessage', `${winnerName} beat ${loserName}. ELO updated successfully!`, true);
-    document.getElementById('addGameForm').reset();
-    document.getElementById('gameHandicap').value = '0';
-  } catch (error) {
-    showMessage('addGameMessage', error.message, false);
-  }
-}
+          <div class="form-field">
+            <label for="gameHandicap">Handicap (0-9, Black receives)</label>
+            <input id="gameHandicap" type="number" placeholder="Enter handicap" value="0" min="0" max="9" step="1" />
+          </div>
 
-window.addEventListener('DOMContentLoaded', async () => {
-  bindTabs();
-  await importSeedDataIfNeeded();
-  await loadLeaderboard();
-  await loadGames();
+          <button type="submit" class="primary">Add Game</button>
+          <div id="addGameMessage" class="message"></div>
+        </form>
+      </div>
+    </div>
 
-  const addPlayerForm = document.getElementById('addPlayerForm');
-  const addGameForm = document.getElementById('addGameForm');
-  const exportPlayersBtn = document.getElementById('exportPlayersBtn');
-  const exportGamesBtn = document.getElementById('exportGamesBtn');
+    <div class="card export-section">
+      <h2>Export Data</h2>
+      <p>Download your players and games as JSON files for backup or sharing.</p>
+      <div class="row">
+        <button id="exportPlayersBtn" class="primary">Download Players</button>
+        <button id="exportGamesBtn" class="primary">Download Games</button>
+      </div>
+    </div>
+  </div>
 
-  if (addPlayerForm) {
-    addPlayerForm.addEventListener('submit', handleAddPlayer);
-  }
-
-  if (addGameForm) {
-    addGameForm.addEventListener('submit', handleAddGame);
-  }
-
-  if (exportPlayersBtn) {
-    exportPlayersBtn.addEventListener('click', handleExportPlayers);
-  }
-
-  if (exportGamesBtn) {
-    exportGamesBtn.addEventListener('click', handleExportGames);
-  }
-});
-
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
