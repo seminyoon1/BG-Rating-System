@@ -86,6 +86,7 @@ function renderGames(games) {
       <tr>
         <td><span ${whiteClass}>${game.white || 'Unknown'}</span></td>
         <td><span ${blackClass}>${game.black || 'Unknown'}</span></td>
+        <td>${game.name || 'Unnamed Game'}</td>
         <td><a href="${safeLink}" target="_blank" rel="noopener noreferrer">View Game</a></td>
       </tr>
     `;
