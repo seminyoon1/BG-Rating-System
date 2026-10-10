@@ -31,8 +31,8 @@ class ELODatabase {
     });
   }
 
-  async addPlayer(username) {
-    const clean = username.trim();
+  async addPlayer(username, initialElo = 1000) {
+    const clean = String(username || '').trim();
     if (!clean) throw new Error('Username is required');
     if (clean.length > 40) throw new Error('Username must be 40 characters or fewer');
 
@@ -41,7 +41,7 @@ class ELODatabase {
 
     const player = {
       username: clean,
-      elo_rating: 1000,
+      elo_rating: Number(initialElo) || 1000,
       wins: 0,
       losses: 0,
       created_at: new Date().toISOString()
@@ -84,6 +84,16 @@ class ELODatabase {
     });
   }
 
+  async getAllMatches() {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction('matches', 'readonly');
+      const store = tx.objectStore('matches');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   calculateELO(winnerElo, loserElo, kFactor = 32) {
     const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
     const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
@@ -93,8 +103,8 @@ class ELODatabase {
   }
 
   async recordMatch(winnerName, loserName) {
-    const winner = winnerName.trim();
-    const loser = loserName.trim();
+    const winner = String(winnerName || '').trim();
+    const loser = String(loserName || '').trim();
 
     if (!winner || !loser) throw new Error('Both usernames are required');
     if (winner === loser) throw new Error('Winner and loser must be different');
@@ -149,48 +159,10 @@ class ELODatabase {
     };
   }
 
-  async getTotalMatches() {
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction('matches', 'readonly');
-      const store = tx.objectStore('matches');
-      const request = store.count();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
   async exportData() {
     const players = await this.getAllPlayers();
-    const matches = await new Promise((resolve, reject) => {
-      const tx = this.db.transaction('matches', 'readonly');
-      const store = tx.objectStore('matches');
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-
+    const matches = await this.getAllMatches();
     return { players, matches };
-  }
-
-  async importData(data) {
-    if (!data || !Array.isArray(data.players) || !Array.isArray(data.matches)) {
-      throw new Error('Invalid import data format');
-    }
-
-    await new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['players', 'matches'], 'readwrite');
-      const playerStore = tx.objectStore('players');
-      const matchStore = tx.objectStore('matches');
-
-      playerStore.clear();
-      matchStore.clear();
-
-      data.players.forEach((player) => playerStore.put(player));
-      data.matches.forEach((match) => matchStore.put(match));
-
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
   }
 
   async clearAllData() {
