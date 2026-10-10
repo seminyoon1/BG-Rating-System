@@ -126,6 +126,7 @@ class ELODatabase {
     const winnerSide = String(options.winnerSide || '').trim() || (white === winner ? 'White' : 'Black');
     const matchName = String(options.name || 'Unnamed Game').trim();
     const link = String(options.link || '#').trim();
+    const handicap = Number(options.handicap) || 0;
 
     if (!winner || !loser) throw new Error('Both usernames are required');
     if (winner === loser) throw new Error('Winner and loser must be different');
@@ -161,6 +162,7 @@ class ELODatabase {
         white,
         black,
         winner_side: winnerSide,
+        handicap,
         name: matchName,
         link,
         winner_before: oldWinnerElo,
@@ -208,7 +210,10 @@ class ELODatabase {
       matchStore.clear();
 
       data.players.forEach((player) => playerStore.put(player));
-      data.matches.forEach((match) => matchStore.put(match));
+      data.matches.forEach((match) => matchStore.put({
+        ...match,
+        handicap: Number(match.handicap) || 0
+      }));
 
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
