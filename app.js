@@ -111,7 +111,8 @@ async function syncFromJsonFiles() {
     if (gamesResponse.ok) {
       const gamesData = await gamesResponse.json();
       if (Array.isArray(gamesData.games)) {
-        // Stored newest-first order is preserved by keeping file order
+        // games.json is stored newest-first. The database assigns ids in insertion
+        // order (oldest = lowest id), so insert in reverse (oldest first).
         matches = gamesData.games.map((game) => {
           const white = String(game.white || '').trim();
           const black = String(game.black || '').trim();
@@ -130,7 +131,7 @@ async function syncFromJsonFiles() {
             link: game.link || '#',
             created_at: new Date().toISOString()
           };
-        });
+        }).reverse();
       }
     }
 
@@ -138,6 +139,12 @@ async function syncFromJsonFiles() {
   } catch (error) {
     console.warn('Could not sync from JSON files, using local data instead:', error);
   }
+}
+
+// Returns matches sorted newest first (highest id first).
+async function getMatchesNewestFirst() {
+  const matches = await eloDb.getAllMatches();
+  return matches.slice().sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
 }
 
 async function loadLeaderboard() {
@@ -164,7 +171,7 @@ async function loadGames() {
 
   try {
     await eloDb.ready;
-    const matches = await eloDb.getAllMatches();
+    const matches = await getMatchesNewestFirst();
 
     allGames = matches.map((match) => ({
       white: match.white || match.winner || 'Unknown',
@@ -247,7 +254,7 @@ async function handleExportPlayers() {
 async function handleExportGames() {
   try {
     await eloDb.ready;
-    const matches = await eloDb.getAllMatches();
+    const matches = await getMatchesNewestFirst();
 
     const games = matches.map((match) => ({
       white: match.white || 'Unknown',
@@ -337,16 +344,8 @@ async function handleAddGame(event) {
       link
     });
 
-    allGames.unshift({
-      white,
-      black,
-      winner,
-      handicap,
-      name,
-      link
-    });
-
-    renderGames(allGames);
+    // Reload from the database so the newest game is always shown on top
+    await loadGames();
     await loadLeaderboard();
     showMessage('addGameMessage', `${winnerName} beat ${loserName}. ELO updated successfully!`, true);
     document.getElementById('addGameForm').reset();
