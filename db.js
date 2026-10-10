@@ -31,10 +31,21 @@ class ELODatabase {
     });
   }
 
-  applyDanAdjustment(eloValue) {
-    const safeElo = Number(eloValue) || 0;
-    const adjustment = safeElo > 3100 ? -0.005 : 0.005;
-    return Math.max(0, Number((safeElo + adjustment).toFixed(3)));
+  applyDanAdjustment(oldElo, newElo) {
+    const safeOldElo = Number(oldElo) || 0;
+    const safeNewElo = Number(newElo) || 0;
+    const eloChange = safeNewElo - safeOldElo;
+
+    if (safeOldElo > 3100) {
+      if (eloChange > 0) {
+        const adjusted = safeNewElo - 0.005;
+        return Math.max(0, Number(adjusted.toFixed(3)));
+      } else {
+        return safeOldElo;
+      }
+    }
+
+    return Math.max(0, safeNewElo);
   }
 
   async addPlayer(username, initialElo = 1000) {
@@ -130,8 +141,8 @@ class ELODatabase {
     const oldLoserElo = loserPlayer.elo_rating;
     const { newWinnerElo, newLoserElo } = this.calculateELO(oldWinnerElo, oldLoserElo);
 
-    const adjustedWinnerElo = this.applyDanAdjustment(newWinnerElo);
-    const adjustedLoserElo = this.applyDanAdjustment(newLoserElo);
+    const adjustedWinnerElo = this.applyDanAdjustment(oldWinnerElo, newWinnerElo);
+    const adjustedLoserElo = this.applyDanAdjustment(oldLoserElo, newLoserElo);
 
     winnerPlayer.elo_rating = adjustedWinnerElo;
     winnerPlayer.wins = (winnerPlayer.wins || 0) + 1;
