@@ -41,7 +41,7 @@ class ELODatabase {
 
     const player = {
       username: clean,
-      elo_rating: Number(initialElo) || 1000,
+      elo_rating: Math.max(0, Number(initialElo) || 1000),
       wins: 0,
       losses: 0,
       created_at: new Date().toISOString()
@@ -98,7 +98,7 @@ class ELODatabase {
     const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 200));
     const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 200));
     const newWinnerElo = Math.round(winnerElo + kFactor * (1 - expectedWinner));
-    const newLoserElo = Math.round(loserElo + kFactor * (0 - expectedLoser));
+    const newLoserElo = Math.max(0, Math.round(loserElo + kFactor * (0 - expectedLoser)));
     return { newWinnerElo, newLoserElo };
   }
 
