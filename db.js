@@ -110,7 +110,7 @@ class ELODatabase {
     });
   }
 
-  calculateELO(winnerElo, loserElo, kFactor = 24) {
+  calculateELO(winnerElo, loserElo, kFactor = 20) {
     const expectedWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 200));
     const expectedLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 200));
     const newWinnerElo = Math.round(winnerElo + kFactor * (1 - expectedWinner));
