@@ -102,9 +102,14 @@ class ELODatabase {
     return { newWinnerElo, newLoserElo };
   }
 
-  async recordMatch(winnerName, loserName) {
+  async recordMatch(winnerName, loserName, options = {}) {
     const winner = String(winnerName || '').trim();
     const loser = String(loserName || '').trim();
+    const white = String(options.white || winner).trim();
+    const black = String(options.black || loser).trim();
+    const winnerSide = String(options.winnerSide || '').trim() || (white === winner ? 'White' : 'Black');
+    const matchName = String(options.name || 'Unnamed Game').trim();
+    const link = String(options.link || '#').trim();
 
     if (!winner || !loser) throw new Error('Both usernames are required');
     if (winner === loser) throw new Error('Winner and loser must be different');
@@ -134,6 +139,11 @@ class ELODatabase {
       matchStore.add({
         winner: winner,
         loser: loser,
+        white,
+        black,
+        winner_side: winnerSide,
+        name: matchName,
+        link,
         winner_before: oldWinnerElo,
         winner_after: newWinnerElo,
         loser_before: oldLoserElo,
@@ -163,6 +173,27 @@ class ELODatabase {
     const players = await this.getAllPlayers();
     const matches = await this.getAllMatches();
     return { players, matches };
+  }
+
+  async importData(data) {
+    if (!data || !Array.isArray(data.players) || !Array.isArray(data.matches)) {
+      throw new Error('Invalid import data format');
+    }
+
+    await new Promise((resolve, reject) => {
+      const tx = this.db.transaction(['players', 'matches'], 'readwrite');
+      const playerStore = tx.objectStore('players');
+      const matchStore = tx.objectStore('matches');
+
+      playerStore.clear();
+      matchStore.clear();
+
+      data.players.forEach((player) => playerStore.put(player));
+      data.matches.forEach((match) => matchStore.put(match));
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
   }
 
   async clearAllData() {
