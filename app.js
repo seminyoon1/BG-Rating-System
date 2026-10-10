@@ -57,7 +57,7 @@ function renderGames(games) {
   const tbody = document.getElementById('gamesBody');
 
   if (!games.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No games yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No games yet.</td></tr>';
     return;
   }
 
@@ -65,11 +65,13 @@ function renderGames(games) {
     const safeLink = game.link || '#';
     const whiteClass = game.winner === 'White' ? 'class="winner-highlight"' : '';
     const blackClass = game.winner === 'Black' ? 'class="winner-highlight"' : '';
+    const handicap = Number(game.handicap) || 0;
 
     return `
       <tr>
         <td><span ${whiteClass}>${game.white || 'Unknown'}</span></td>
         <td><span ${blackClass}>${game.black || 'Unknown'}</span></td>
+        <td>${handicap}</td>
         <td>${game.name || 'Unnamed Game'}</td>
         <td><a href="${safeLink}" target="_blank" rel="noopener noreferrer">View Game</a></td>
       </tr>
@@ -128,6 +130,7 @@ async function importSeedDataIfNeeded() {
                 white,
                 black,
                 winner_side: winnerSide,
+                handicap: Number(game.handicap) || 0,
                 name: game.name || 'Unnamed Game',
                 link: game.link || '#',
                 created_at: new Date().toISOString()
@@ -181,13 +184,14 @@ async function loadGames() {
       white: match.white || match.winner || 'Unknown',
       black: match.black || match.loser || 'Unknown',
       winner: match.winner_side || (match.white === match.winner ? 'White' : 'Black') || 'White',
+      handicap: Number(match.handicap) || 0,
       name: match.name || 'Unnamed Game',
       link: match.link || '#'
     }));
 
     renderGames(allGames);
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
   }
 }
 
@@ -263,6 +267,7 @@ async function handleExportGames() {
       white: match.white || 'Unknown',
       black: match.black || 'Unknown',
       winner: match.winner_side || 'White',
+      handicap: Number(match.handicap) || 0,
       name: match.name || 'Unnamed Game',
       link: match.link || '#'
     }));
@@ -344,6 +349,7 @@ async function handleAddGame(event) {
       white,
       black,
       winner,
+      handicap: 0,
       name,
       link
     });
