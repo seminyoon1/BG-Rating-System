@@ -1,129 +1,394 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BG Rating System</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="container">
-    <h1>BG Rating System</h1>
+let allPlayers = [];
+let allGames = [];
 
-    <div class="card">
-      <div class="card-tabs">
-        <button class="tab active" data-tab="players" type="button">Player List</button>
-        <button class="tab" data-tab="games" type="button">Recent Games</button>
-        <button class="tab" data-tab="addPlayer" type="button">Add Player</button>
-        <button class="tab" data-tab="addGame" type="button">Add Game</button>
-      </div>
+function truncateToHundredth(value) {
+  const num = Number(value) || 0;
+  return Math.floor(num * 100) / 100;
+}
 
-      <div id="playersView" class="tab-panel active">
-        <input id="searchInput" type="text" placeholder="Search username..." oninput="filterLeaderboard()" />
-        <div class="table-wrap scrollable-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Username</th>
-                <th>ELO</th>
-                <th>Wins</th>
-                <th>Losses</th>
-                <th>W/L</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboardBody"></tbody>
-          </table>
-        </div>
-      </div>
+function calculateRank(elo) {
+  const eloNum = Number(elo) || 0;
 
-      <div id="gamesView" class="tab-panel">
-        <div class="table-wrap scrollable-table">
-          <table>
-            <thead>
-              <tr>
-                <th>White</th>
-                <th>Black</th>
-                <th>Handicap</th>
-                <th>Name</th>
-                <th>Link</th>
-              </tr>
-            </thead>
-            <tbody id="gamesBody"></tbody>
-          </table>
-        </div>
-      </div>
+  if (eloNum < 3000) {
+    const kyuIndex = Math.floor(eloNum / 100);
+    if (kyuIndex >= 30) return '30 Kyu';
+    if (kyuIndex <= 0) return '30 Kyu';
+    return `${30 - kyuIndex} Kyu`;
+  }
 
-      <div id="addPlayerView" class="tab-panel">
-        <form id="addPlayerForm" class="form-group">
-          <div class="form-field">
-            <label for="playerUsername">Username</label>
-            <input id="playerUsername" type="text" placeholder="Enter username" required />
-          </div>
+  const danIndex = Math.floor((eloNum - 3000) / 100) + 1;
+  if (danIndex >= 9) return '9 Dan';
+  return `${danIndex} Dan`;
+}
 
-          <div class="form-field">
-            <label for="playerELO">ELO Rating</label>
-            <input id="playerELO" type="number" placeholder="Enter ELO rating" value="1500" required />
-          </div>
+function getWlRatio(player) {
+  if (Number(player.losses) === 0) {
+    return Number(player.wins) > 0 ? Number(player.wins).toFixed(1) : '—';
+  }
+  return (Number(player.wins) / Number(player.losses)).toFixed(2);
+}
 
-          <button type="submit" class="primary">Add Player</button>
-          <div id="addPlayerMessage" class="message"></div>
-        </form>
-      </div>
+function renderLeaderboard(players) {
+  const tbody = document.getElementById('leaderboardBody');
 
-      <div id="addGameView" class="tab-panel">
-        <form id="addGameForm" class="form-group">
-          <div class="form-field">
-            <label for="gameWhite">White Player</label>
-            <input id="gameWhite" type="text" placeholder="Enter white player name" required />
-          </div>
+  if (!players.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">No players yet.</td></tr>';
+    return;
+  }
 
-          <div class="form-field">
-            <label for="gameBlack">Black Player</label>
-            <input id="gameBlack" type="text" placeholder="Enter black player name" required />
-          </div>
+  tbody.innerHTML = players.map((player) => {
+    const rankLabel = calculateRank(player.elo_rating);
+    const truncatedElo = truncateToHundredth(player.elo_rating);
 
-          <div class="form-field">
-            <label for="gameWinner">Winner</label>
-            <select id="gameWinner" required>
-              <option value="" disabled selected hidden>Select winner</option>
-              <option value="White">White</option>
-              <option value="Black">Black</option>
-            </select>
-          </div>
+    return `
+      <tr>
+        <td>${rankLabel}</td>
+        <td>${player.username}</td>
+        <td><strong>${truncatedElo}</strong></td>
+        <td>${player.wins || 0}</td>
+        <td>${player.losses || 0}</td>
+        <td>${getWlRatio(player)}</td>
+      </tr>
+    `;
+  }).join('');
+}
 
-          <div class="form-field">
-            <label for="gameName">Game Name</label>
-            <input id="gameName" type="text" placeholder="Enter game name" required />
-          </div>
+function renderGames(games) {
+  const tbody = document.getElementById('gamesBody');
 
-          <div class="form-field">
-            <label for="gameLink">Game Link</label>
-            <input id="gameLink" type="url" placeholder="Enter game link" required />
-          </div>
+  if (!games.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No games yet.</td></tr>';
+    return;
+  }
 
-          <div class="form-field">
-            <label for="gameHandicap">Handicap</label>
-            <input id="gameHandicap" type="number" placeholder="Enter handicap" value="0" min="0" />
-          </div>
+  tbody.innerHTML = games.map((game) => {
+    const safeLink = game.link || '#';
+    const whiteClass = game.winner === 'White' ? 'class="winner-highlight"' : '';
+    const blackClass = game.winner === 'Black' ? 'class="winner-highlight"' : '';
+    const handicap = Number(game.handicap) || 0;
 
-          <button type="submit" class="primary">Add Game</button>
-          <div id="addGameMessage" class="message"></div>
-        </form>
-      </div>
-    </div>
+    return `
+      <tr>
+        <td><span ${whiteClass}>${game.white || 'Unknown'}</span></td>
+        <td><span ${blackClass}>${game.black || 'Unknown'}</span></td>
+        <td>${handicap}</td>
+        <td>${game.name || 'Unnamed Game'}</td>
+        <td><a href="${safeLink}" target="_blank" rel="noopener noreferrer">View Game</a></td>
+      </tr>
+    `;
+  }).join('');
+}
 
-    <div class="card export-section">
-      <h2>Export Data</h2>
-      <p>Download your players and games as JSON files for backup or sharing.</p>
-      <div class="row">
-        <button id="exportPlayersBtn" class="primary">Download Players</button>
-        <button id="exportGamesBtn" class="primary">Download Games</button>
-      </div>
-    </div>
-  </div>
+async function importSeedDataIfNeeded() {
+  try {
+    await eloDb.ready;
 
-  <script src="db.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+    const storedPlayers = await eloDb.getAllPlayers();
+    if (storedPlayers.length === 0) {
+      try {
+        const playersResponse = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+        if (playersResponse.ok) {
+          const playersData = await playersResponse.json();
+          if (Array.isArray(playersData.players)) {
+            const normalizedPlayers = playersData.players.map((player) => ({
+              username: String(player.username || '').trim(),
+              elo_rating: Number(player.elo_rating) || 1000,
+              wins: Number(player.wins) || 0,
+              losses: Number(player.losses) || 0,
+              created_at: player.created_at || new Date().toISOString()
+            }));
+
+            await eloDb.importData({
+              players: normalizedPlayers,
+              matches: []
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load data.json:', e);
+      }
+    }
+
+    const matchesBeforeSeed = await eloDb.getAllMatches();
+    if (matchesBeforeSeed.length === 0) {
+      try {
+        const gamesResponse = await fetch('games.json?t=' + Date.now(), { cache: 'no-store' });
+        if (gamesResponse.ok) {
+          const gamesData = await gamesResponse.json();
+          if (Array.isArray(gamesData.games)) {
+            const existingPlayers = await eloDb.getAllPlayers();
+            const seedMatches = gamesData.games.map((game) => {
+              const white = String(game.white || '').trim();
+              const black = String(game.black || '').trim();
+              const winnerSide = String(game.winner || '').trim();
+              const winner = winnerSide === 'White' ? white : black;
+              const loser = winnerSide === 'White' ? black : white;
+
+              return {
+                winner,
+                loser,
+                white,
+                black,
+                winner_side: winnerSide,
+                handicap: Number(game.handicap) || 0,
+                name: game.name || 'Unnamed Game',
+                link: game.link || '#',
+                created_at: new Date().toISOString()
+              };
+            });
+
+            await eloDb.importData({
+              players: existingPlayers,
+              matches: seedMatches
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load games.json:', e);
+      }
+    }
+  } catch (error) {
+    console.warn('Seed import failed:', error);
+  }
+}
+
+async function loadLeaderboard() {
+  const tbody = document.getElementById('leaderboardBody');
+
+  try {
+    await eloDb.ready;
+    await importSeedDataIfNeeded();
+    const players = await eloDb.getAllPlayers();
+    allPlayers = players;
+
+    const searchValue = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
+    const filtered = searchValue
+      ? allPlayers.filter((player) => String(player.username).toLowerCase().includes(searchValue))
+      : allPlayers;
+
+    renderLeaderboard(filtered);
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Unable to load leaderboard: ${error.message}</td></tr>`;
+  }
+}
+
+async function loadGames() {
+  const tbody = document.getElementById('gamesBody');
+
+  try {
+    await eloDb.ready;
+    await importSeedDataIfNeeded();
+    const matches = await eloDb.getAllMatches();
+
+    allGames = matches.map((match) => ({
+      white: match.white || match.winner || 'Unknown',
+      black: match.black || match.loser || 'Unknown',
+      winner: match.winner_side || (match.white === match.winner ? 'White' : 'Black') || 'White',
+      handicap: Number(match.handicap) || 0,
+      name: match.name || 'Unnamed Game',
+      link: match.link || '#'
+    }));
+
+    renderGames(allGames);
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load games: ${error.message}</td></tr>`;
+  }
+}
+
+function filterLeaderboard() {
+  const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filtered = searchValue
+    ? allPlayers.filter((player) => String(player.username).toLowerCase().includes(searchValue))
+    : allPlayers;
+  renderLeaderboard(filtered);
+}
+
+function setActiveTab(tabName) {
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach((tab) => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+
+  panels.forEach((panel) => {
+    panel.classList.toggle('active', panel.id === `${tabName}View`);
+  });
+}
+
+function bindTabs() {
+  document.querySelectorAll('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
+  });
+}
+
+function showMessage(elementId, message, isSuccess) {
+  const messageEl = document.getElementById(elementId);
+  if (!messageEl) return;
+
+  messageEl.textContent = message;
+  messageEl.className = `message ${isSuccess ? 'success' : 'error'}`;
+  setTimeout(() => {
+    messageEl.className = 'message';
+  }, 3000);
+}
+
+function downloadJSON(data, filename) {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function handleExportPlayers() {
+  try {
+    await eloDb.ready;
+    const players = await eloDb.getAllPlayers();
+    const data = { players };
+    downloadJSON(data, 'data.json');
+  } catch (error) {
+    console.error('Export players failed:', error);
+    alert('Failed to export players: ' + error.message);
+  }
+}
+
+async function handleExportGames() {
+  try {
+    await eloDb.ready;
+    const matches = await eloDb.getAllMatches();
+
+    const games = matches.map((match) => ({
+      white: match.white || 'Unknown',
+      black: match.black || 'Unknown',
+      winner: match.winner_side || 'White',
+      handicap: Number(match.handicap) || 0,
+      name: match.name || 'Unnamed Game',
+      link: match.link || '#'
+    }));
+
+    const data = { games };
+    downloadJSON(data, 'games.json');
+  } catch (error) {
+    console.error('Export games failed:', error);
+    alert('Failed to export games: ' + error.message);
+  }
+}
+
+async function handleAddPlayer(event) {
+  event.preventDefault();
+
+  const username = document.getElementById('playerUsername').value.trim();
+  const elo = Number(document.getElementById('playerELO').value) || 1500;
+
+  try {
+    await eloDb.ready;
+    const player = await eloDb.addPlayer(username, elo);
+    allPlayers.push(player);
+    allPlayers.sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating));
+    renderLeaderboard(allPlayers);
+    showMessage('addPlayerMessage', `Player "${player.username}" added successfully!`, true);
+    document.getElementById('addPlayerForm').reset();
+    document.getElementById('playerELO').value = '1500';
+  } catch (error) {
+    showMessage('addPlayerMessage', error.message, false);
+  }
+}
+
+async function handleAddGame(event) {
+  event.preventDefault();
+
+  const white = document.getElementById('gameWhite').value.trim();
+  const black = document.getElementById('gameBlack').value.trim();
+  const winner = document.getElementById('gameWinner').value;
+  const name = document.getElementById('gameName').value.trim();
+  const link = document.getElementById('gameLink').value.trim();
+  const handicap = Number(document.getElementById('gameHandicap').value) || 0;
+
+  try {
+    if (!white || !black || !winner || !name || !link) {
+      throw new Error('Please fill in all fields');
+    }
+
+    if (white === black) {
+      throw new Error('White and black cannot be the same player');
+    }
+
+    if (winner !== 'White' && winner !== 'Black') {
+      throw new Error('Please select a winner');
+    }
+
+    await eloDb.ready;
+
+    const whitePlayer = await eloDb.getPlayer(white);
+    if (!whitePlayer) {
+      throw new Error(`White player "${white}" was not found in the player list`);
+    }
+
+    const blackPlayer = await eloDb.getPlayer(black);
+    if (!blackPlayer) {
+      throw new Error(`Black player "${black}" was not found in the player list`);
+    }
+
+    const winnerName = winner === 'White' ? white : black;
+    const loserName = winner === 'White' ? black : white;
+
+    await eloDb.recordMatch(winnerName, loserName, {
+      white,
+      black,
+      winnerSide: winner,
+      handicap,
+      name,
+      link
+    });
+
+    allGames.unshift({
+      white,
+      black,
+      winner,
+      handicap,
+      name,
+      link
+    });
+
+    renderGames(allGames);
+    await loadLeaderboard();
+    showMessage('addGameMessage', `${winnerName} beat ${loserName}. ELO updated successfully!`, true);
+    document.getElementById('addGameForm').reset();
+  } catch (error) {
+    showMessage('addGameMessage', error.message, false);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  bindTabs();
+  await importSeedDataIfNeeded();
+  await loadLeaderboard();
+  await loadGames();
+
+  const addPlayerForm = document.getElementById('addPlayerForm');
+  const addGameForm = document.getElementById('addGameForm');
+  const exportPlayersBtn = document.getElementById('exportPlayersBtn');
+  const exportGamesBtn = document.getElementById('exportGamesBtn');
+
+  if (addPlayerForm) {
+    addPlayerForm.addEventListener('submit', handleAddPlayer);
+  }
+
+  if (addGameForm) {
+    addGameForm.addEventListener('submit', handleAddGame);
+  }
+
+  if (exportPlayersBtn) {
+    exportPlayersBtn.addEventListener('click', handleExportPlayers);
+  }
+
+  if (exportGamesBtn) {
+    exportGamesBtn.addEventListener('click', handleExportGames);
+  }
+});
