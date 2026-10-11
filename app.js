@@ -27,7 +27,7 @@ function getWlRatio(player) {
   if (Number(player.losses) === 0) {
     return Number(player.wins) > 0 ? Number(player.wins).toFixed(1) : '—';
   }
-  return (Number(player.wins) / Number(player.losses)).toFixed(2);
+  return (Number(player.wins) / (Number(player.wins) + Number(player.losses))).toFixed(2);
 }
 
 function renderLeaderboard(players) {
