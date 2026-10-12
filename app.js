@@ -25,8 +25,8 @@ function calculateRank(elo) {
 
 function getWlRatio(player) {
   if (Number(player.losses) === 0) {
-    return Number(player.wins) > 0 ? (Number(player.wins)/(Number(player.wins) : '—';
-  }
+    return Number(player.wins) > 0 ? '1' : '—';
+  } else {
   return (Number(player.wins) / (Number(player.wins) + Number(player.losses))).toFixed(2);
 }
 
