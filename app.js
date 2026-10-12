@@ -28,7 +28,7 @@ function getWlRatio(player) {
     return Number(player.wins) > 0 ? '1' : '—';
   } else {
   return (Number(player.wins) / (Number(player.wins) + Number(player.losses))).toFixed(2);
-}
+}}
 
 function renderLeaderboard(players) {
   const tbody = document.getElementById('leaderboardBody');
