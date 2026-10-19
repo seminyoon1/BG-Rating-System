@@ -18,7 +18,7 @@ function calculateRank(elo) {
   }
 
   const danIndex = Math.floor((eloNum - 3500) / 100) + 1;
-  if (danIndex >= 9) return '9 DANG';
+  if (danIndex >= 9) return '9 Dang';
   return `${danIndex} Dang`;
 }
 
