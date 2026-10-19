@@ -11,16 +11,15 @@ function truncateToHundredth(value) {
 function calculateRank(elo) {
   const eloNum = Number(elo) || 0;
 
-  if (eloNum < 3000) {
+  if (eloNum < 3500) {
     const kyuIndex = Math.floor(eloNum / 100);
-    if (kyuIndex >= 30) return '30 Kyu';
-    if (kyuIndex <= 0) return '30 Kyu';
-    return `${30 - kyuIndex} Kyu`;
+    if (kyuIndex <= 5) return '30 Queue';
+    return `${35 - kyuIndex} Queue`;
   }
 
-  const danIndex = Math.floor((eloNum - 3000) / 100) + 1;
-  if (danIndex >= 9) return '9 Dan';
-  return `${danIndex} Dan`;
+  const danIndex = Math.floor((eloNum - 3500) / 100) + 1;
+  if (danIndex >= 9) return '9 DANG';
+  return `${danIndex} Dang`;
 }
 
 function getWlRatio(player) {
